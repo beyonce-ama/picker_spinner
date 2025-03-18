@@ -1,5 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_fortune_wheel/flutter_fortune_wheel.dart';
+import 'dart:async';
+import 'dart:math';
 
 class SpinnerScreen extends StatefulWidget {
   const SpinnerScreen({super.key});
@@ -9,6 +12,98 @@ class SpinnerScreen extends StatefulWidget {
 }
 
 class _SpinnerScreenState extends State<SpinnerScreen> {
+  final TextEditingController _inputController = TextEditingController();
+  List<String> selections = [];
+  List<String> history = [];
+  final StreamController<int> selected = StreamController<int>();
+  bool showEntries = true;
+  int spinDuration = 2;
+  final List<Color> rainbowColors = [
+    Colors.red, Colors.orange, Colors.yellow, Colors.green,
+    Colors.blue, Colors.indigo, Colors.purple
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    selections = ["Item 1", "Item 2","Item 3", "Item 4", "Item 5","Item 6"];
+  }
+
+  void spinWheel() {
+    if (selections.isEmpty) return;
+    final randomIndex = Random().nextInt(selections.length);
+    selected.add(randomIndex);
+
+    Future.delayed(Duration(seconds: spinDuration), () {
+      showResultDialog(selections[randomIndex], randomIndex);
+    });
+  }
+
+  void showResultDialog(String result, int index) {
+    setState(() {
+      history.add(result);
+    });
+
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: Text(" $result"),
+        content: const Text("result"),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text("OK"),
+            onPressed: () {
+              Navigator.pop(context);
+              removeChoice(index);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void addChoice() {
+    String inputText = _inputController.text.trim();
+    if (inputText.isNotEmpty) {
+      setState(() {
+        if (selections.length < 2) {
+          selections.add(inputText);
+        } else if (selections.contains("Item 1")) {
+          selections[selections.indexOf("Item 1")] = inputText;
+        } else if (selections.contains("Item 2")) {
+          selections[selections.indexOf("Item 2")] = inputText; 
+          } else if (selections.contains("Item 3")) {
+          selections[selections.indexOf("Item 3")] = inputText;
+        }  else if (selections.contains("Item 4")) {
+          selections[selections.indexOf("Item 4")] = inputText; 
+          } else if (selections.contains("Item 5")) {
+          selections[selections.indexOf("Item 5")] = inputText;
+          }else if (selections.contains("Item 6")) {
+          selections[selections.indexOf("Item 6")] = inputText;
+        
+        }else {
+          selections.add(inputText);
+        }
+        _inputController.clear();
+      });
+    }
+  }
+
+  void removeChoice(int index) {
+    setState(() {
+      selections.removeAt(index);
+      if (selections.length < 2) {
+        selections.addAll(["item 1"]);
+      }
+    });
+  }
+
+  void shuffleChoices() {
+    setState(() {
+      selections.shuffle();
+    });
+  }
+
  @override
 Widget build(BuildContext context) {
   return CupertinoPageScaffold(
@@ -55,11 +150,81 @@ Widget build(BuildContext context) {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 20),
+              GestureDetector(
+                onTap: spinWheel,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      width: 320,
+                      height: 320,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.red.shade700,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.white.withOpacity(0.2),
+                            blurRadius: 15,
+                            spreadRadius: 5,
+                          ),
+                        ],
+                        border: Border.all(color: Colors.black, width: 10), 
+                      ),
+                    ),
+
+                    SizedBox(
+                      width: 280,
+                      height: 280,
+                      child: FortuneWheel(
+                        selected: selected.stream,
+                        duration: Duration(seconds: spinDuration),
+                        items: selections.asMap().entries.map((entry) {
+                          int index = entry.key;
+                          String choice = entry.value;
+                          return FortuneItem(
+                            child: Transform.rotate(
+                              angle: -((index * (6.28 / selections.length))), 
+                              child: Text(
+                                choice,
+                                style: TextStyle(color: Colors.white, fontSize: 18),
+                              ),
+                            ),
+                            style: FortuneItemStyle(
+                              color: rainbowColors[index % rainbowColors.length],
+                              borderColor: Colors.black,
+                              borderWidth: 2, 
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: [Colors.white, Colors.grey.shade300],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        border: Border.all(color: Colors.orange, width: 3),
+                        boxShadow: [BoxShadow(color: Colors.black38, blurRadius: 8)],
+                      ),
+                    ),
+
+                  
+                ],
+              ),
+            ),
+
               const SizedBox(height: 20),
               Row(
                 children: [
                   Expanded(
                     child: CupertinoTextField(
+                      controller: _inputController,
                       placeholder: "Enter a choice...",
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
@@ -69,19 +234,24 @@ Widget build(BuildContext context) {
                   ),
                   const SizedBox(width: 10),
                   CupertinoButton(
-                onPressed: () {  },
+                onPressed: addChoice,
                 child: const Text("Add Choice", style: TextStyle(color: Colors.white)),
               ),
                 ],
               ),
               const SizedBox(height: 10),
               CupertinoSlider(
+                value: spinDuration.toDouble(),
                 min: 1,
                 max: 10,
                 divisions: 9,
-                value: null, onChanged: (double value) {  },
+                onChanged: (value) {
+                  setState(() {
+                    spinDuration = value.toInt();
+                  });
+                },
               ),
-              Text("Spin Duration: seconds", textAlign: TextAlign.center),
+              Text("Spin Duration: $spinDuration seconds", textAlign: TextAlign.center),
               const SizedBox(height: 10),
               Container(
                 margin: const EdgeInsets.symmetric(vertical: 10),
@@ -104,8 +274,9 @@ Widget build(BuildContext context) {
                         Expanded(
                           child: CupertinoButton(
                             padding: EdgeInsets.zero,
+                            onPressed: () => setState(() => showEntries = true),
+                                                color: showEntries ? Colors.deepPurple.shade700 : Colors.deepPurple.shade300,
                             borderRadius: BorderRadius.circular(10),
-                            onPressed: () {  },
                             child: Padding(
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               child: Row(
@@ -124,7 +295,13 @@ Widget build(BuildContext context) {
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    child: 
+                                    child: Text(
+                                      "${selections.length}",
+                                      style: TextStyle(
+                                        color: showEntries ? Colors.white : Colors.white, 
+                                        fontSize: 14,
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -134,8 +311,8 @@ Widget build(BuildContext context) {
                         Expanded(
                             child: CupertinoButton(
                               padding: EdgeInsets.zero,
+                              onPressed: () => setState(() => showEntries = false),
                               borderRadius: BorderRadius.circular(10),
-                              onPressed: () {  },
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(vertical: 10),
                                 child: Row(
@@ -155,6 +332,11 @@ Widget build(BuildContext context) {
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Text(
+                                        "${history.length}",
+                                        style: TextStyle(
+                                          color: !showEntries ? Colors.white : Colors.white, 
+                                          fontSize: 14,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -171,7 +353,7 @@ Widget build(BuildContext context) {
                         alignment: Alignment.centerRight,
                         child: CupertinoButton(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          onPressed: () {  },
+                          onPressed: shuffleChoices,
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: const [
@@ -196,7 +378,7 @@ Widget build(BuildContext context) {
                                )),
                               CupertinoButton(
                                 padding: EdgeInsets.zero,
-                                onPressed: () {  },
+                                onPressed: () => removeChoice(selections.indexOf(item)),
                                 child: const Icon(CupertinoIcons.trash, size: 20, color: CupertinoColors.systemRed),
                               ),
                             ],
@@ -209,7 +391,8 @@ Widget build(BuildContext context) {
                         children: history.map((item) => Padding(
                           padding: const EdgeInsets.symmetric(vertical: 4),
                           child: Text(item, style: TextStyle(fontSize: 16, 
-             ),
+                          )
+                          ),
                         )).toList(),
                       ),
                   ],
@@ -221,6 +404,13 @@ Widget build(BuildContext context) {
         ),
       ),
     ),
-  )
+  );
 }
+
+
+  @override
+  void dispose() {
+    selected.close();
+    super.dispose();
+  }
 }
