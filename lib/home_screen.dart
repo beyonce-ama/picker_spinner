@@ -1,5 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'dart:math';
+import 'spinner_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -9,6 +11,31 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  double _angle = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    );
+  }
+
+  void _spinWheel() {
+    setState(() {
+      _angle += (Random().nextDouble() * 5 + 5) * pi;
+    });
+
+    _controller.forward(from: 0).then((_) {
+      Navigator.push(
+        context,
+        CupertinoPageRoute(builder: (context) => const SpinnerScreen()),
+      );
+    });
+  }
+
 @override
 Widget build(BuildContext context) {
   return CupertinoPageScaffold(
@@ -29,6 +56,7 @@ Widget build(BuildContext context) {
                     style: TextStyle(
                       fontSize: 30,
                       fontWeight: FontWeight.bold,
+                      color: isDarkMode ? CupertinoColors.white : Colors.deepPurple.shade800,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -39,8 +67,19 @@ Widget build(BuildContext context) {
                       "Not sure what to choose? Let Spinner decide for you!",
                       style: TextStyle(
                         fontSize: 18,
+                        color: isDarkMode ? CupertinoColors.systemGrey4 : Colors.deepPurple.shade700,
                       ),
                       textAlign: TextAlign.center,
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  GestureDetector(
+                    onTap: _spinWheel,
+                    child: AnimatedRotation(
+                      turns: _angle / (2 * pi),
+                      duration: const Duration(seconds: 3),
+                      curve: Curves.easeOut,
+                      child: Image.asset('images/wheel.png', width: 250, height: 250),
                     ),
                   ),
                   const SizedBox(height: 15),
@@ -66,6 +105,20 @@ Widget build(BuildContext context) {
                   ),
                   const SizedBox(height: 150),
                 ],
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          top: 20, 
+          right: 20, 
+          child: GestureDetector(
+            onTap: () => _showInfoDialog(context),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              child: Icon(
+                CupertinoIcons.info_circle_fill,
+                size: 28,
               ),
             ),
           ),
@@ -144,5 +197,10 @@ void _showInfoDialog(BuildContext context) {
         ],
       ),
     );
+  }
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 }
