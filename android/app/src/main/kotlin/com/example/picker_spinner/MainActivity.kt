@@ -1,4 +1,4 @@
-package com.devops.picker_spinner
+package com.devops.spinnerr
 
 import io.flutter.embedding.android.FlutterActivity
 
