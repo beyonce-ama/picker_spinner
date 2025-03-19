@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.picker_spinner"
+    namespace = "com.devops.picker_spinner"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.picker_spinner"
+        applicationId = "com.devops.picker_spinner"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
